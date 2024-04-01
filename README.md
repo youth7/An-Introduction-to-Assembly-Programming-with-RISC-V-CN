@@ -1,4 +1,4 @@
-本文是对[《An Introduction to Assembly Programming with RISC-V》](https://riscv-programming.org/book/riscv-book.html)一书的的中文翻译   
+本文是对[《An Introduction to Assembly Programming with RISC-V》](https://riscv-programming.org/book/riscv-book.html)一书的的中文翻译，有了通顺部分地方采用了意译。   
 
 
 # 第一部分： 计算机系统和汇编语言入门
