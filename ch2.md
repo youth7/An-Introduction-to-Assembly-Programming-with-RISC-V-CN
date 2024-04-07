@@ -31,7 +31,7 @@ $$
 则十进制系统中一个m位的数字的值能够使用公式2.2计算
 
 $$
-value(number_{10})= \sum_{i=0}^{i<m}  \underbrace{symbol\_value(d^i) \times 10^i}_{\text{digit value}} \tag{2.2}
+value(number_{10})= \sum_{i=0}^{i=m-1}  \underbrace{symbol\_value(d^i) \times 10^i}_{\text{digit value}} \tag{2.2}
 $$
 
 观察每个 $d^i$  自身值对整个数字的值的作用，可知这和 $di$ 所用的符号及其自身的位置（ $i$ ）相关。例如数字1969有四个digit： $d^3=1,d^2=9,d^1=6,d^0=9$ ，其中 $d^2$ 的值是900而 $d^0$ 的值是9。
@@ -52,6 +52,6 @@ $$
 则任意自然数能够被二、八、十、十六进制的位置数字系统通过m位的digit序列表示出来，如公式2.3所示   
 
 $$
-number_{base} = d^{m-1}_{base}d^{m-2}_{base}...d^1_{base}d^0_{base}  \tag{2.3}
+ number_{base} = d_{base}^{m-1}d_{base}^{m-2}...d_{base}^1d_{base}^0  \tag{2.3}
 $$
 
