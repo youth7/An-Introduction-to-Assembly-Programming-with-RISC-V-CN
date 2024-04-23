@@ -51,7 +51,7 @@
 
 
 
->  [1] 原书中并没有定义什么是`memory word`，根据上下文应该和字节（byte）的意义差不多。后面章节中我们可以看到，为了方便演示`memory word`的长度不一定是8。注意它和计算机科学中的 [*字*（word）](https://en.wikipedia.org/wiki/Word_(computer_architecture)) 的意思不一样。
+>  [1] 原书中并没有定义什么是`memory word`，根据上下文应该和字节（byte）的意义差不多，即计算机内存中的**原子存储单位**。后面章节中我们可以看到，为了方便演示`memory word`的长度不一定是8。注意它和计算机科学中的 [*字*（word）](https://en.wikipedia.org/wiki/Word_(computer_architecture)) 的意思不一样。
 >
 >  [2] 原文中没有直接定义byte，按照约定俗成，一个byte就是8个bit。在其他计算机架构中，byte的长度不一定是8，但现在几乎所有的架构都使用8作为byte的长度。
 >
