@@ -1,4 +1,6 @@
-本文是对[《An Introduction to Assembly Programming with RISC-V》](https://riscv-programming.org/book/riscv-book.html)一书的的中文翻译，有了通顺部分地方采用了意译。   
+本文是对[《An Introduction to Assembly Programming with RISC-V》](https://riscv-programming.org/book/riscv-book.html)一书的的中文翻译，有了通顺部分地方采用了意译。  
+
+ 注：某些Latex数学公式在其他markdown解释器能够正常展示，但上了github中却莫名报错，虽然可以修复这些问题让github正常显示公式，但这又会导致其他markdown解释器无法正常显示公式。经过考虑后决定不兼容github，如果有需要请下载仓库后使用主流markdown解释器打开。本文中的公式在typora和vscode+markdown插件中都能正常展示。
 
 
 # 第一部分： 计算机系统和汇编语言入门
