@@ -1,6 +1,6 @@
 本章主要讨论汇编（assembly  ），目标文件（object ）和可执行文件（executable files）的概念
 
-# 3.1生成原生程序（native program）
+# 3.1 生成原生程序（native program）
 
 在本节中，我们将讨论如何将用高级语言（如C）编写的程序转换为原生程序。
 
@@ -73,9 +73,11 @@ $ riscv64-unknown-elf-ld -m elf32lriscv main.o mylib.o -o main.x
 
 ```bash
 $ riscv64-unknown-elf-gcc -mabi=ilp32 -march=rv32i -S main.c -o main.s
-$ riscv64-unknown-elf-as -mabi=ilp32 -march=rv32i main.s -o main.o
+$ riscv64-unknown-elf-as  -mabi=ilp32 -march=rv32i main.s -o main.o
+
 $ riscv64-unknown-elf-gcc -mabi=ilp32 -march=rv32i -S func.c -o func.s
-$ riscv64-unknown-elf-as -mabi=ilp32 -march=rv32i func.s -o func.o
+$ riscv64-unknown-elf-as  -mabi=ilp32 -march=rv32i func.s -o func.o
+
 $ riscv64-unknown-elf-ld -m elf32lriscv main.o func.o -o main.x
 ```
 
@@ -99,13 +101,25 @@ $ riscv64-unknown-elf-ld -m elf32lriscv main.o func.o -o main.x
 
 ## 3.2.1 标签和符号
 
-...
+**标签是表示程序位置的“标记”**。它们通常由以冒号（`:`）结尾的英文单词定义，可以插入到汇编程序中，以标记程序位置，以便汇编代码或其他汇编命令（例如directive）引用。
 
-...
+下面的代码展示了一个汇编程序，它包含两个标签，分别是定义在第1行的`sum10:`和定义在第4行的`x:`。`x:`标记了变量的位置，该变量由第2行的`.word 10`指令分配和初始化。`sum10:`标记标识了包含`sum10`例程第一个指令的程序位置，换句话说，它定义了例程入口。同样，在这个例子中，标签`x:`被第5行的`lw`指令用来引用变量`x`。
 
-...
+```assembly
+x:
+	.word 10
 
-我们可以通过使用工具来检查目标文件的内容，这些工具解码目标文件上的信息，并以人类可读的格式（即文本格式）显示它们。例如，GNU的`nm`可用于检查目标文件的符号表（symbol table）。假设前面的代码被编码到一个名为`sum10.o`的目标文件中。我们可以通过执行`riscv64 unknown-elf-nm`工具来检查其符号表，如下所示。
+sum10:
+	lw a0, x
+	addi a0, a0, 10
+	ret
+```
+
+全局变量和例程是存储在计算机主存中的程序元素。每个变量和每个例程占用一段 *内存字* ，并由它们占用的第一个 *内存字* 的地址标识。要读取全局变量的内容，或执行一个例程，知道它们的地址就足够了，即它们占据的第一个 *内存字* 的地址。另一方面，在链接器将多个目标文件链接为一个文件之后，分配给变量和例程的地址在可执行文件上是固定的。因此，汇编程序需要一种机制来引用全局变量和例程。这可以通过使用标签来实现，如前面的例子所示。在这种情况下，在为每个全局变量分配空间或为每个例程生成代码之前，程序员（或编译器）定义一个标签，用于标识变量或例程。
+
+**程序中的符号（symbol）是一个与数值相关联的名称（name），而符号表（symbol table）是将每个程序符号映射到其值的数据结构**。标记由汇编程序自动转换为程序符号，并与一个表示其在程序中的位置的数值相关联，该数值是一个内存地址。汇编程序将所有符号添加到程序的符号表中，该符号表也存储在目标文件中。
+
+我们可以通过使用工具来检查目标文件的内容，这些工具解码目标文件上的信息，并以人类可读的格式（即文本格式）显示它们。例如，GNU的`nm`可用于检查目标文件的符号表（symbol table）。假设前面的代码被编码到一个名为`sum10.o`的目标文件中。我们可以通过执行`riscv64-unknown-elf-nm`工具来检查其符号表，如下所示。
 
 ```bash
 $ riscv64-unknown-elf-nm sum10.o
@@ -134,11 +148,55 @@ $ riscv64-unknown-elf-nm get_answer.o
 00000000 t get_answer
 ```
 
+注意，符号表包含`answer`和`get answer`两个符号。`answer`是一个绝对符号（由输出的字母a表示），也就是说它的值在链接过程中不会改变。`get answer`则表示`.text`节（section）中的一个位置，在重定位过程中其值（即地址的值）可能会改变。下一节将讨论重定位过程和程序节（program section）的概念
+
+## 3.3.2 标签的引用和程序的重定位
+
+在组装（assembling）和链接过程中，对标签的每个引用都必须被一个地址替换。例如，在前面的代码中，在汇编程序时，`lw`指令中对标签`x:`的引用被替换为地址0，即`x`所表示的变量的地址。
+
+为了说明这个概念，让我们考虑下面的RV32I汇编程序，其中包含4条指令和两个标签。第一个标签`trunk42`（第1行）标识了一个函数的入口点，第二个标签`done` （第5行）标识了一个程序位置，是分支指令（第3行）的目标。
+
+```assembly
+trunk42:
+    li t1, 42
+    bge t1, a0, done
+    mv a0, t1
+done:
+    ret
+```
+
+在组装（assembling）该程序时，汇编器将每条汇编指令（例如，`li`，`bge`，…）翻译成一条机器指令，即编码为32位的指令。因此，该程序总共占用16个 *内存字* ，每个指令占用4个。同样，汇编程序将第一条指令映射到地址0，第二条指令映射到地址4，以此类推。在这种情况下，标记程序开始的`trunk42`标签与地址0相关联，标记指令`ret`所在位置的`done`标签与地址c（这是一个16进制的地址值）相关联。由于`bge`指令对`done`标签有一个引用，汇编程序将与`done`标签（地址c）相关联的地址编码到该指令的字段中。
+
+GNU objdump工具可以用来检查目标文件的一些内容。下面的例子展示了如何使用`riscv64-unknown-elf-objdump`对`trunk.o`文件中的数据和指令进行解码，以便我们检查其内容。
+
+```bash
+$ riscv64-unknown-elf-objdump -D trunk.o
+
+trunk.o: file format elf32-littleriscv
+
+Disassembly of section .text:
+
+00000000 <trunk42>:
+ 0: 02a00313 li t1,42
+ 4: 00a35463 bge t1,a0,c <done>
+ 8: 00030513 mv a0,t1
+
+0000000c <done>:
+ c: 00008067 ret
+...
+```
 
 
 
+## 3.3.3 未定义（Undefined）的引用
 
-# 3.3 程序段（Program sections）
+## 3.2.4 全局符号与局部符号
+
+## 3.2.5 程序的入口
+
+
+
+# 3.3 程序节（Program sections）
 
 # 3.4 可执行文件 vs 目标文件
 
