@@ -246,6 +246,48 @@ Disassembly of section .text:
 
 ## 3.2.3 未定义（Undefined）的引用
 
+如前几节所述，汇编代码依赖于标签来引用程序中的某个位置。在某些情况下，汇编代码引用不在同一文件中定义的标签。当调用在另一个文件中实现的例程或访问在另一个文件中声明的全局变量时，这很常见。下面的示例显示了一段汇编代码，该代码引用了一个不在同一文件（`main.s`）上定义的标签。`jal`指令（第4行）使用了不在`main.s`中定义的`exit`标签。
+
+```assembly
+# Contents of the main.s file
+start:
+    li a0, 10
+    li a1, 20
+    jal exit
+```
+
+汇编器（assembler）将该程序汇编，并将符号表上的`exit`标签注册为未定义符号。`riscv64-unknown-elf-nm`命令的输出中，通过在符号名称之前放置字母U来表示这是一个未定义的符号。假设前面的代码汇编后生成了`main.o`文件，我们可以检查其符号表的内容，如下所示：
+
+```bash
+# 译注：这里需要先使用命令riscv64-unknown-elf-as -march=rv32im main.s -o main.o先生成目标文件
+$ riscv64-unknown-elf-nm main.o
+         U exit
+00000000 t start
+```
+
+汇编器也会将对该符号的引用注册到重定位表中。`riscv64-unknown-elf-objdump`命令显示目标文件`main. o `包含一个重定位记录，该记录是关于`jal`指令中对`exit`标签的引用。
+
+```bash
+riscv64-unknown-elf-objdump -r main.o
+main.o:     file format elf32-littleriscv
+
+RELOCATION RECORDS FOR [.text]:
+OFFSET   TYPE              VALUE
+00000008 R_RISCV_JAL       exit
+```
+
+在链接目标文件时，链接器必须解析未定义的符号，即找到该符号定义（译注：符号的定义包含了符号值），并根据符号值调整符号表和相关代码。在前面的示例中，链接器将查找`exit`符号，以便调整`jal`指令使其引用正确的地址。如果链接器找不到符号的定义，它会停止链接过程并抛出错误消息。下面的例子说明了这种情况。在本例中，我们尝试在链接`main.o`时不提供另一个包含`exit`定义的目标文件。此时链接器发出错误消息：`undefined reference to 'exit'`。
+
+```bash
+$ riscv64-unknown-elf-ld -m elf32lriscv main.o -o main.x
+
+riscv64-unknown-elf-ld: warning: cannot find entry symbol _start; defaulting to 0000000000010074
+riscv64-unknown-elf-ld: main.o: in function `start':
+(.text+0x8): undefined reference to `exit'
+```
+
+
+
 ## 3.2.4 全局符号与局部符号
 
 ## 3.2.5 程序的入口
