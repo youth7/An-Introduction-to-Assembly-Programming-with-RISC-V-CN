@@ -249,7 +249,6 @@ Disassembly of section .text:
 如前几节所述，汇编代码依赖于标签来引用程序中的某个位置。在某些情况下，汇编代码引用不在同一文件中定义的标签。当调用在另一个文件中实现的例程或访问在另一个文件中声明的全局变量时，这很常见。下面的示例显示了一段汇编代码，该代码引用了一个不在同一文件（`main.s`）上定义的标签。`jal`指令（第4行）使用了不在`main.s`中定义的`exit`标签。
 
 ```assembly
-# Contents of the main.s file
 start:
     li a0, 10
     li a1, 20
@@ -286,11 +285,63 @@ riscv64-unknown-elf-ld: main.o: in function `start':
 (.text+0x8): undefined reference to `exit'
 ```
 
-
+> 译注：原文中的报错信息是：`...cannot find entry symbol start...`，但在真机上执行时候是：`...cannot find entry symbol _start...`，关于`start`符号在3.2.5中还会提及
 
 ## 3.2.4 全局符号与局部符号
 
+符号分为局部符号和全局符号。局部符号只在同一文件内可见，链接器不会使用它们来解析其他文件上未定义的引用。另一方面，全局符号由链接器用于解析其他文件上的未定义引用。
+
+默认情况下，汇编器将标签注册为局部符号。`.globl`是一个汇编指令（directive ），它指示汇编器将标签注册为全局符号。下面的例子展示了一段汇编代码，其中使用了`.globl`来指示汇编器将`exit`标签注册为符号表上的全局符号。
+
+```assembly
+.globl exit
+exit:
+	li a0, 0
+	li a7, 93
+    ecall
+```
+
+假设`exit`函数在`exit.s`文件中定义，在`main.s`中被调用，则下面的命令展示了如何汇编并链接这些文件。
+
+```bash
+$ riscv64-unknown-elf-as -march=rv32im main.s -o main.o
+$ riscv64-unknown-elf-as -march=rv32im exit.s -o exit.o
+$ riscv64-unknown-elf-ld -m elf32lriscv main.o exit.o -o main.x
+riscv64-unknown-elf-ld: warning: cannot find entry symbol _start; defaulting to 0000000000010074
+```
+
+这次链接器没有报`undefined reference to 'exit'`错误了，值得注意的是，如果`exit`标签没有注册为全局标签，链接器将不会使用它来解析未定义的符号，链接过程将失败。
+
 ## 3.2.5 程序的入口
+
+每个程序都有一个入口点，即CPU必须从这个点开始执行程序。入口点由一个地址定义，它是必须执行的第一条指令的地址。
+
+可执行文件有一个头文件（header），包含了程序的若干信息，其中一个字段存储程序入口点（entry point）地址。在这种情况下，一旦操作系统将程序加载到主存中，它就用入口点地址设置PC寄存器，以便程序开始执行。
+
+链接器负责在可执行文件上设置入口点字段。为此，它会寻找一个名为`start`的符号。如果找到，就用`start`符号值设置入口点。否则，它将入口点设置为默认值，通常是程序第一个指令的地址。
+
+为了选择程序的入口点，程序员（或编译器）可以在必须执行的第一条指令之前定义标签`start`。在前面的例子中，我们故意在`main.s`中使用了`start`标签以标记程序入口点。尽管如此，正如警告消息所指出的（`warning: cannot find entry symbol _start; defaulting to...`），链接器无法找到入口符号。这是因为`start`标签必须注册为全局符号，以便链接器将其识别为入口点。下面展示了如何调整`main.s`中的代码，以将`start`标签注册为全局符号。
+
+```assembly
+.global start
+start:
+    li a0, 10
+    li a1, 20
+    jal exit
+```
+
+> 译注：但在笔者的实际测试中，想要设置入口点，需要设置`_start`而不是`start`。并且从上述的报错信息中我们可以看到，链接器一直都是说找不到符号`_start`。关于这个问题，我在[这篇文章](https://github.com/youth7/myblog/blob/master/mds/Rust/embed_with_rust/embedonomicon.md)的`Entry`一节记录了相关的讨论，简单来说：
+>
+> 1. `ld`的文档上确实将`start`视为入口点
+> 2. 但`ld`有一个默认的内部脚本，里面使用了`ENTRY(_start)`来改变了入口程序
+
+一旦`start`标签注册为全局符号，链接器就使用其地址来设置入口点信息。下面的命令将`main.s`和`exit.s`汇编并链接到`main.x`中。在本例中，没有错误或警告消息，因为我们使用`.globl`指令将`exit`和`start`标签都设置为全局符号，这样链接器就能解析对`exit`的引用和设置程序入口点。
+
+```bash
+$ riscv64-unknown-elf-as -march=rv32im main.s -o main.o
+$ riscv64-unknown-elf-as -march=rv32im exit.s -o exit.o
+$ riscv64-unknown-elf-ld -m elf32lriscv exit.o main.o -o main.x
+```
 
 
 
