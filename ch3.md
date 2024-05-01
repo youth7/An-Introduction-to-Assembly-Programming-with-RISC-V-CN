@@ -343,7 +343,52 @@ $ riscv64-unknown-elf-as -march=rv32im exit.s -o exit.o
 $ riscv64-unknown-elf-ld -m elf32lriscv exit.o main.o -o main.x
 ```
 
+注意在本例中，调用链接器时，我们先传递目标文件`exit.o`作为参数，然后是`main.o`。因此在`main.x`文件中，链接器将`exit.o`的内容放在`main.o`的内容之前。这可以通过使用`riscv64-unknown- self -objdump`列出`main.x`的内容来观察，如下所示：
 
+```bash
+$ riscv64-unknown-elf-objdump -D main.x
+
+main.x: file format elf32-littleriscv
+
+Disassembly of section .text:
+00010054 <exit>:
+10054:       00000513 li a0,0
+10058:       05d00893 li a7,93
+1005c:       00000073 ecall
+00010060 <start>:
+10060:        00a00513 li a0,10
+10064:        01400593 li a1,20
+10068:        fedff0ef jal ra,10054 <exit>
+```
+
+即使链接器将`exit`函数放在前面，与`start`标签相关联的代码也将首先执行，因为入口点字段包含与`start`标签相关联的地址。
+
+GNU readelf可用于显示有关ELF文件的信息。下面的命令显示了如何使用`riscv64-unknown-elf-readelf`检查可执行文件`main.x`的头文件（header）。注意，入口点地址被设置为0x10060，即`start`标签的地址。
+
+```bash
+$ riscv64-unknown-elf-readelf -h main.x
+
+ELF Header:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF32
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              EXEC (Executable file)
+  Machine:                           RISC-V
+  Version:                           0x1
+  Entry point address:               0x10060
+  Start of program headers:          52 (bytes into file)
+  Start of section headers:          476 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         1
+  Size of section headers:           40 (bytes)
+  Number of section headers:         6
+  Section header string table index: 5
+```
 
 # 3.3 程序节（Program sections）
 
