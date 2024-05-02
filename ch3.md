@@ -392,5 +392,107 @@ ELF Header:
 
 # 3.3 程序节（Program sections）
 
+可执行文件和目标文件以及汇编程序通常按节（section）组织。一个节可以包含数据或指令，每个节的内容被映射到一组连续的内存地址。在Linux系统上生成的可执行文件中，经常能够看到以下节：
+
+* `.text`：存储程序指令的节
+* `.data`：存储已初始化的全局变量（即程序执行前就必须初始化的变量）
+* `.bss`：存储未初始化的全局变量
+* `.rodata`：存储常量，即程序在执行过程中会读取但不修改的值
+
+当链接多个目标文件时，链接器将不同目标文件中名称相同的节的组合一起，并将它们放在可执行文件的单个节中。例如，当链接多个目标文件时，来自所有目标文件的`.text`节的内容被组合一起，并按顺序放置在可执行文件的一个也称为`.text`的节上。图3.2显示了由`riscv64-unknown-elf-ld`生成的RV32I可执行文件的布局，它使用了ELF格式。该文件包含三节：`.data`、`.rodata`和`.text`。
+
+`.text`节的内容被映射到内存中地址为8000~8007的地方，而`data`节则被映射到地址800d~8011。
+
+默认情况下，GNU将所有信息添加到`.text`节。为了指示汇编器将汇编后的内容添加到其他节中，程序员（或编译器）可以用`.section secname`指令。该指令指示汇编器将后续的内容放入名为`secname`的节中。下面的示例说明了如何使用`.section`指令向`.text`节添加指令，向`.data`节添加变量。
+
+```assembly
+.section .data
+x: .word 10
+.section .text
+update_x:
+    la t1, x
+    sw a0, (t1)
+    ret
+.section .data
+y: .word 12
+.section .text
+update_y:
+    la t1, y
+    sw a0, (t1)
+    ret
+```
+
+上一个示例的第1行中的`.section .data`指令指示汇编器从这里开始向`.data`节添加信息。第2行包含一个标签（`x:`）和一个`.word`指令，它们一起用于声明和初始化一个名为`x`的全局变量。第三行中的`.section .text`指令指示汇编器将后续的内容添加到`.text`中。因此，`update_x`标签（第4行）引用了`.text`节上的一个位置，接下来的三个指令（第5-7行）被添加到`.text`节。第8行中的`.section .data`指令指示汇编器将以下信息添加到`.data`节。因此，通过组合`y:`标签和`.word`指令创建的变量`y`被添加到`.data`节，`y`就在`x`变量之后。在此之后，第10行的`.section .text`指令指示汇编器将后续的内容添加到`.text`节。最后，更新标签（第11行）引用`.text`节中的一个位置，其余的指令（第12-14行）被添加到`.text`节。
+
+假设上述代码存在文件`prorg.s`中，我们可以用以下命令来对它进行汇编然后观察目标文件中的内容：
+
+```assembly
+riscv64-unknown-elf-objdump -D prog.o
+
+prog.o:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <update_x>:
+   0:   00000317                auipc   t1,0x0
+   4:   00030313                mv      t1,t1
+   8:   00a32023                sw      a0,0(t1) # 0 <update_x>
+   c:   00008067                ret
+
+00000010 <update_y>:
+  10:   00000317                auipc   t1,0x0
+  14:   00030313                mv      t1,t1
+  18:   00a32023                sw      a0,0(t1) # 10 <update_y>
+  1c:   00008067                ret
+
+Disassembly of section .data:
+
+00000000 <x>:
+   0:   000a                    c.slli  zero,0x2
+        ...
+
+00000004 <y>:
+   4:   000c                    0xc
+        ...
+```
+
+请注意，由update x和update y标签表示的程序例程和程序指令都位于.text部分，而由x和y标签表示的全局变量以及32位值000a和000c位于.data部分。另外，请注意，每个部分的元素都被分配了从0开始的地址。然而，由于指令和数据存储在同一个内存中，即主内存中，我们可能不会将变量和指令加载到相同的内存地址中。链接器通过重新定位指令和数据来防止这个问题，以便为它们分配不冲突的地址。下面的命令显示了如何调用链接器来生成名为prog的可执行文件。以及如何调用objdump工具来检查其内容
+
+```assembly
+riscv64-unknown-elf-ld -m elf32lriscv prog.o -o prog.x
+riscv64-unknown-elf-objdump -D prog.x
+
+prog.x:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00010074 <update_x>:
+   10074:       00001317                auipc   t1,0x1
+   10078:       01c30313                addi    t1,t1,28 # 11090 <__DATA_BEGIN__>
+   1007c:       00a32023                sw      a0,0(t1)
+   10080:       00008067                ret
+
+00010084 <update_y>:
+   10084:       80418313                addi    t1,gp,-2044 # 11094 <y>
+   10088:       00a32023                sw      a0,0(t1)
+   1008c:       00008067                ret
+
+Disassembly of section .data:
+
+00011090 <__DATA_BEGIN__>:
+   11090:       000a                    c.slli  zero,0x2
+        ...
+
+00011094 <y>:
+   11094:       000c                    0xc
+        ...
+```
+
+可见，链接器将地址为10074~1008f的内存分配给`.text`，将地址为10090 ~10097的内存分配给`.data`。
+
+>  注意：一些操作系统将硬件配置为禁止往`.text`和`.rodata`节中写入内容。因此，变量不应该放在这些节上。此外，一些操作系统配置硬件禁止CPU从执行不是位于`.text`节中的指令。因此，将程序指令分配到`.text`节是很重要的。
+
 # 3.4 可执行文件 vs 目标文件
 
