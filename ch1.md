@@ -41,7 +41,7 @@
 
 ## 1.1.1 主存
 
-计算机主存是用来存储程序指令和数据的存储设备，它由一组*内存字*<sup>[1]</sup>（memory words ）组成。每个*内存字*能够存储多个bits(通常是8个)，并由一个唯一的数字标识，该数字被称为*内存字地址*（memory word address）。
+计算机主存是用来存储程序指令和数据的存储设备，它由一组*内存字*<sup>[1]</sup>（memory words ）组成。每个*内存字* 能够存储多个bits（通常是8个），并由一个唯一的数字标识，该数字被称为*内存字地址*（memory word address）。
 
 字节可寻址内存（byte addressable memory  ）是一种内存，其中的每个*内存字*（此时又称为memory location）存储一个byte<sup>[2]</sup>，并与一个唯一的地址相关联。图1.2说明了字节可寻址内存的组织方式。可以看到，由地址5标识的*内存字*包含了值 $11111111_2$，而位于地址为0的*内存字*则包含了值 $00110110_2$  
 
@@ -51,11 +51,14 @@
 
 
 
->  [1] 原书中并没有定义什么是`memory word`，根据上下文应该和字节（byte）的意义差不多，即计算机内存中的**原子存储单位**。后面章节中我们可以看到，为了方便演示`memory word`的长度不一定是8。注意它和计算机科学中的 [*字*（word）](https://en.wikipedia.org/wiki/Word_(computer_architecture)) 的意思不一样。
+>  [1] 原书中并没有精确定义什么是memory word，根据上下文推断，它和计算机科学中的 [*字*（word）](https://en.wikipedia.org/wiki/Word_(computer_architecture)) 的意思不一样。 个人理解它就是计算机内存中的**基本存储单位**，因为原文是这样写的：
 >
->  [2] 原文中没有直接定义byte，按照约定俗成，一个byte就是8个bit。在其他计算机架构中，byte的长度不一定是8，但现在几乎所有的架构都使用8作为byte的长度。
+>  * *it(main storage) is composed of a set of memory words*（说明是组成内存的最基本单元）
+>  * *Each memory word is capable of storing a set of bits (usually eight bits) and is identified by a unique number, knownas the memory word address*（说明是寻址的基本单元） 
 >
->  [3] 请注意区分内存字（memory word）、byte，内存地址3个不同的概念。其中memory word又称为memory location。
+>  而在现代计算机上，byte就是内存中存储和寻址的最基本单元，所以在本书中我们可以认为memory word就是byte。但memory word是一个更加通用和抽象的概念，强调的是最小的存储和可寻址单元。在后面章节中我们可以看到，某些场景下memory word的长度不一定是8 bit，例如2.2.1中出现了 *three-bit word* 这样的说法。
+>
+>  [2] 原文中没有直接定义byte，按照约定俗成，一个byte就是8个bit。[但历史上出现过各种长度（1~48）的byte](https://en.wikipedia.org/wiki/Byte)，但现在几乎所有的架构都使用8作为byte的长度。
 
 ## 1.1.2 CPU
 
