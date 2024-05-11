@@ -263,7 +263,7 @@ sum42:
 
 
 
-我们汇编器中的下一个元素是汇编指令`addi a0, a0, 42`。在这种情况下，汇编器将其转换为一条机器指令（❶），将其添加到 *active section* 的某个位置（❷），这个位置的地址存于 *active location counter* 中，最后更新 *active location counter* 使其指向下一个可用地址（➌）。在这种情况下，*active location counter* 的值增加4，因为添加到 *active section* 的RV32I指令需要4个内存字。图4.3说明了这个过程
+我们汇编器中的下一个元素是汇编指令`addi a0, a0, 42`。在这种情况下，汇编器将其转换为一条机器指令（❶），将其添加到 *active section* 的某个位置（❷），这个位置的地址存于 *active location counter* 中，最后更新 *active location counter* 使其指向下一个可用地址（❸）。在这种情况下，*active location counter* 的值增加4，因为添加到 *active section* 的RV32I指令需要4个内存字。图4.3说明了这个过程
 
 
 
@@ -273,7 +273,7 @@ sum42:
 
 
 
-汇编程序中的最后一个元素也是汇编指令。同样，汇编器将其转换为一条机器指令（❶），将其添加到 *active section* 的某个位置（❷），这个位置的地址存于 *active location counter* 中，最后更新 *active location counter* 使其指向下一个可用地址（➌）。这个过程如图4 - 4所示。
+汇编程序中的最后一个元素也是汇编指令。同样，汇编器将其转换为一条机器指令（❶），将其添加到 *active section* 的某个位置（❷），这个位置的地址存于 *active location counter* 中，最后更新 *active location counter* 使其指向下一个可用地址（❸）。这个过程如图4 - 4所示。
 
 
 
@@ -345,7 +345,7 @@ x: .word 10
 
 > 图4.6
 
-汇编器中的下一个元素是`.ascii "hello"`命令，它指示汇编程序向  *active section* 添加一个字符串。假设我们的输入文件是使用ASCII标准编码的，那么汇编器将字符串编码为基于ASCII标准的字节序列（❶），将这些字节添加到 *active section* 的下一个可用地址（❷），更新位置计数器（➌）。图4.7说明了这个过程
+汇编器中的下一个元素是`.ascii "hello"`命令，它指示汇编程序向  *active section* 添加一个字符串。假设我们的输入文件是使用ASCII标准编码的，那么汇编器将字符串编码为基于ASCII标准的字节序列（❶），将这些字节添加到 *active section* 的下一个可用地址（❷），更新位置计数器（❸）。图4.7说明了这个过程
 
 ![](./imgs/ch4/4.7.png)
 
