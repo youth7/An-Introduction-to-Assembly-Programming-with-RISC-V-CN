@@ -361,9 +361,31 @@ x: .word 10
 
 > 图4.8
 
-## 4.7.2
+## 4.7.2 `.section`命令
 
-## 4.7.3
+如3.3节所讨论的，汇编程序、目标文件和可执行文件是按节组织的。另外，默认情况下，GNU汇编器将信息添加到`.text`节。为了指示汇编器将已汇编的信息添加到其他节中，程序员（或编译器）可以使用`.section secname`指令。在4.6节讨论过，在汇编程序时，汇编器对汇编程序中元素编码，并将其添加到 *active section*。`.section secname`将 *active section* 更改为名称是`secname`的节，因此在该命令之后，汇编器把处理的所有信息都添加到`secname`节。
+
+程序指令应该放在`.text`节中，而常量，即只读数据，必须放在`.rodata`节中。此外，初始化的全局变量必须放在`.data`节，而未初始化的全局变量应该放在`.bss`节。
+下面的汇编代码展示了如何使用`.section`命令将程序指令添加到`.text`节，将程序变量添加到`.data`和`.rodata`节。
+
+```assembly
+.section .text
+set_x:
+    la t1, x
+    sw a0, (t1)
+    ret
+get_msg:
+    la a0, msg
+    ret
+.section .data
+x: .word 10
+.section .rodata
+msg: .string "Assembly rocks!"
+```
+
+>RV32I GNU 汇编器有`.text`、`.data`和`.bss`命令，分别是`.section .text`、`.section .data`和`.section .bss`这三个命令的别名。
+
+## 4.7.3 在`.bbs`上分配变量
 
 ## 4.7.4
 
