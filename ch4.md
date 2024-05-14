@@ -385,10 +385,83 @@ msg: .string "Assembly rocks!"
 
 >RV32I GNU 汇编器有`.text`、`.data`和`.bss`命令，分别是`.section .text`、`.section .data`和`.section .bss`这三个命令的别名。
 
+
+
 ## 4.7.3 在`.bbs`上分配变量
 
-## 4.7.4
+`.bss`节专门存储未初始化的全局变量。这些变量需要在内存上分配，但它们不需要在程序执行时由加载器初始化。因此，其初始值不需要存储在可执行文件或目标文件中。
 
-## 4.7.5
+由于在对象和可执行文件中，`.bss`节没有存储任何信息，因此GNU汇编程序不允许汇编程序向`.bss`节添加数据。为了说明这种情况，让我们考虑以下代码，并假设它存储在名为`data-on-bss.s`的文件中
+
+```assembly
+.section .bss
+x: .word 10
+.section .text
+set_x:
+    la t1, x
+    sw a0, (t1)
+    ret
+```
+
+这段代码试图使用`.word 10`命令向`.bss`节添加一个32位的值。但是在处理`.word 10`指令时，GNU汇编器会停止汇编代码，并发出以下错误消息：
+
+```bash
+$ riscv64-unknown-elf-as -march=rv32im data-on-bss.s -o data-on-bss.o
+data-on-bss.s: Assembler messages:
+data-on-bss.s: Warning: end of file not at end of a line; newline inserted
+data-on-bss.s:2: Error: attempt to store non-zero value in section `.bss'
+```
+
+要在`.bss`节上分配变量，只需声明一个标识变量的标签，并按变量所需字节数向前移动`.bss`的位置计数器，这样就可以在其他地址上分配更多的变量。
+
+`.skip N`命令将位置计数器向前移动N个单位，可用于为`.bss`节中的变量分配空间。下面的代码展示了如何结合`.skip`命令为三个不同的变量分配空间：`x`、`V`和`y`。在这个例子中，程序为变量`x`和`y`分配了4字节，为变量`V`分配了80字节。因此，标签`x`、`V`和`y`的地址分别是：0x0、0x4和0x54。
+
+```assembly
+.section .bss
+x: .skip 4
+V: .skip 80
+y: .skip 4
+```
+
+> 注：有些系统在将程序加载到主存中执行时，用0初始化`.bss`节中的变量。尽管如此，程序员不应该假定`.bss`节中的变量会初始化为0。
+
+
+
+## 4.7.4 `.set`和`.equ`命令
+
+`.set name, expression`命令在符号表中添加一个符号。这个命令接受`name`和`expression`（一个表达式）参数，计算`expression`的值，并将`name`和值存储到符号表中。下面的代码展示了如何使用`.set`命令给符号赋值，并在程序中使用它们。在本例中，程序首先定义了名为`max_value`的符号，并将其与值42关联起来（第1行）。然后在`li`指令上使用`max_value`（第4行）
+
+```assembly
+.set max_value, 42
+
+truncates_value_to_max:
+	li t1, max_value
+	ble a0, t1, ok
+	mv a0, t1
+ok:
+	ret
+```
+
+`.equ`的作用和`.set`一样。
+
+
+
+## 4.7.5 `.global`命令
+
+如3.2.4节所述，符号可以分为局部符号和全局符号。默认情况下，标签自动创建的符号，或者由程序使用`.set`或`.equ`指令显式创建的符号，都作为局部符号存储在符号表中。`.globl`命令可以用来将局部符号转换为全局符号。下面的代码展示了如何通过`.globl`命令将`start`和`max_temp`符号转换为全局符号。
+
+```assembly
+.globl max_value
+.globl start
+
+.set max_value, 42
+
+start:
+	li a0, max_value
+	jal process_temp
+	ret
+```
+
+
 
 ## 4.7.6
