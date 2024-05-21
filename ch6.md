@@ -102,12 +102,12 @@ RV32I的非特权ISA包含33个32位寄存器，也称为非特权寄存器。
 | x2      | sp（**s**tack **p**ointer）                           | 栈指针              |            | ✔️            |
 | x3      | gp（**g**lobal **p**ointer）                          | 全局指针            |            |              |
 | x4      | tp（**t**hread **p**ointer）                          | 线程指针            |            |              |
-| x5~x7   | t0~t2（**t**emporary register **0~2**）               | 临时寄存器0~2       | ✔️          |              |
+| x5-x7   | t0-t2（**t**emporary register **0-2**）               | 临时寄存器0-2       | ✔️          |              |
 | x8      | s0/fp（**s**aved register 0 / **f**rame **p**ointer） | 保存寄存器0或帧指针 |            | ✔️            |
 | x9      | s1（**s**aved register 1 ）                           | 保存寄存器1         |            | ✔️            |
-| x10~x17 | a0~a7（**f**unction arguments 0 to 7）                | 函数参数0~7         | ✔️          |              |
-| x18~x27 | s2~s11（**s**aved register **2~11** ）                | 保存寄存器2~11      |            | ✔️            |
-| x28~x31 | t3~t7（**t**emporary register **3~7**）               | 临时寄存器3~7       | ✔️          |              |
+| x10-x17 | a0-a7（**f**unction arguments 0 to 7）                | 函数参数0-7         | ✔️          |              |
+| x18-x27 | s2-s11（**s**aved register **2-11** ）                | 保存寄存器2-11      |            | ✔️            |
+| x28-x31 | t3-t7（**t**emporary register **3-7**）               | 临时寄存器3-7       | ✔️          |              |
 | pc      | pc（**p**rogram **c**ounter）                         | 程序计数器          |            |              |
 
 > 表6.4 RV32I非特权寄存器
