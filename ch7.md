@@ -339,3 +339,89 @@ x: .skip 4
 
 
 # 7.4 示例
+
+### 7.4.1 查找数组中的最大值
+
+下面的C语言代码展示了一个名为`numbers`的全局数组和一个返回数组中最大值的函数
+
+```c
+/* 全局数组 */
+int numbers[10];
+
+/* 返回数组中的最大值 */
+int get_largest_number()
+{
+	int largest = numbers[0];
+    for (int i=1; i<10; i++) {
+        if (numbers[i] > largest)
+            largest = numbers[i];
+    }
+	return largest;
+}
+```
+
+
+
+```assembly
+.data
+# 分配数组的内存空间 (10个整数需要40字节)
+numbers: .skip 40
+
+.text
+get_largest_number:
+    la a5, numbers 	# a5 := &numbers
+    lw a0, (a5) 	# a0 := numbers[0] a0存放最大值
+    li a1, 1 		# a1 := 1 a1存放i
+    li t4, 10
+    for:
+        bge a1, t4, end 	#  如果i>=10,调到end标签退出循环
+        slli t1, a1, 2 		# t1 := i * 4
+        add t2, a5, t1 		# t2 := &numbers + i*4
+        lw t3, (t2) 		# t3 := numbers[i]
+        blt t3, a0, skip 	# 如果numbers[i] < largest, 则跳转到skip标签
+        mv a0, t3 			# 更新最大值
+    skip:
+        addi a1, a1, 1 # i := i + 1
+        j for
+    end:
+        ret 
+```
+
+其它实现方案还有：
+
+> 注：下面这个例子用到了[RISCV汇编中的modifier](https://sourceware.org/binutils/docs/as/RISC_002dV_002dModifiers.html)，是属于汇编器as中依赖于RISCV的feature
+
+```assembly
+get_largest_number:
+    lui a5,%hi(numbers)
+    lw a0,%lo(numbers)(a5)
+    addi a5,a5,%lo(numbers)
+    addi a3,a5,36
+.L3:
+    lw a4,4(a5)
+    addi a5,a5,4
+    bge a0,a4,.L2
+    mv a0,a4
+.L2:
+    bne a5,a3,.L3
+    ret
+```
+
+
+
+```assembly
+get_largest_number:
+	la a5, numbers 	# a5: 指向当前元素的地址
+	addi a6, a5, 40 # a6: 指向数组的末尾
+	lw a0, (a5) 	# a0：保存largest，初始化为指向数组首元素(number[0])
+	addi a5, a5, 4 	# a5：指向下一个元素
+do_while:
+	lw a4, (a5) 		# a4：加载当前元素（地址存在a5中）
+	bge a0, a4, skip 	# 如果largest >= current，跳转到skip
+	mv a0, a4 			# 否则更新largest
+skip:
+	addi a5, a5, 4 			# a5指向下一个元素
+	bne a5, a6, do_while 	# 如果a5 != a6（即还没到数组末尾），跳转到do_while
+	ret
+```
+
