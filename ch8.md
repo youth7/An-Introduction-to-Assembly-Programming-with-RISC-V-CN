@@ -238,7 +238,82 @@ ret # 返回
 
 ## 8.4.2 获取例程的返回值
 
+RISC-V ilp32 ABI 规定，应将（返回）值存到寄存器`a0`中。如果返回值是64位长，则将低32位存到`a0`中，高32位存到`a1`中。
+
+
+
 # 8.5 值和参数引用
+
+> 本节讨论了两种不同类型的参数：
+>
+> 1. 值参数
+> 2. 引用参数
+
+参数可以作为值传递或作为变量的引用传递。**值参数（Value parameters  ）是通过值传递的参数，它包含了自身的值**，即将值直接放入寄存器或程序栈中。下面的代码演示了一个传参是值传递的例程。该例程接收一个值作为参数，计算其平方，并返回结果。
+
+```c
+int pow2(int v)
+{
+	return v*v;
+}
+```
+
+根据RISC-V ilp32 ABI，这个参数必须在寄存器`a0`中传递。因为它是作为值传递的，所以`a0`将包含值本身。下面的代码用汇编语言实现了前面的C代码。注意，该代码将`a0`的值相乘。
+
+```assembly
+pow2:
+	mul a0, a0, a0 # a0 = a0 * a0
+	ret # 返回
+```
+
+下面的代码展示了如何调用`pow2`来计算32的平方。注意值本身直接放入寄存器`a0`中。
+
+```assembly
+main:
+	li a0, 32 # 设置参数值为32
+	jal pow2 # 调用pow2
+	ret
+```
+
+
+
+Reference parameters are parameters that contain a reference to a variable. This “reference” is the variable memory address. Hence, the routine may use this address to read or update the variable value. The following code shows a routine that expects its parameter to be passed by reference. This routine updates the variable value by increasing its contents by one.
+
+***引用参数*（Reference parameters）这样一种参数，它包含了指向变量的引用**。这个“引用”是变量的内存地址。因此，例程可以使用该地址来读取或更新变量的值。下面的代码显示了一个例程，它期望其参数通过引用传递。这个例程通过将变量的内容加1来更新变量的值。
+
+```c
+1 void inc(int* v)
+2 {
+3 *v = *v + 1;
+4 }
+```
+
+同样，根据RISC-V ilp32 ABI，该参数必须在寄存器`a0`中传递。因为它是作为引用传递的，所以`a0`将包含该变量的地址。下面的代码用汇编语言实现了前面的C代码。请注意，代码使用`a0`中的地址来更新变量的内容。
+
+```assembly
+inc:
+	lw a1, (a0) # a1 = *v
+	addi a1, a1, 1 # a1 = a1 + 1
+	sw a1, (a0) # *v = a1
+	ret
+```
+
+下面的代码展示了如何调用`inc`例程来增加变量`y`的值。注意，变量是`y`的地址，而不是它的值，被加载到寄存器`a0`中。
+
+```assembly
+.data
+y: .skip 4
+
+.text
+main:
+	la a0, y # 将y的地址作为参数加载到a0中
+	jal inc # 调用inc例程
+	ret
+```
+
+Reference parameters can be used to pass information in and out of routines. Since a reference is essentially a memory address, the information being passed into or outof the routine must be located in the memory  
+
+*引用参数* 可用于把信息传入/传出例程。由于引用本质上是一个内存地址，所以传入/传出例程的信息肯定可以（通过引用）在内容中定位。
 
 # 8.6 全局变量vs局部变量
 
