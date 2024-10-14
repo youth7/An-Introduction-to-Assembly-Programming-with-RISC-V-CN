@@ -311,11 +311,67 @@ main:
 	ret
 ```
 
-Reference parameters can be used to pass information in and out of routines. Since a reference is essentially a memory address, the information being passed into or outof the routine must be located in the memory  
+
 
 *引用参数* 可用于把信息传入/传出例程。由于引用本质上是一个内存地址，所以传入/传出例程的信息肯定可以（通过引用）在内容中定位。
 
 # 8.6 全局变量vs局部变量
+
+在高级语言（如C语言）中，全局变量是在例程外部声明的变量，能被程序中的任何例程访问。
+
+下面的代码展示了一个带有全局变量`x`的C语言程序。注意，可以在任何例程中访问这个全局变量。
+
+```C
+int x;
+
+int main()
+{
+	return x+1;
+}
+```
+汇编器将全局变量分配在静态数据空间上，在汇编代码中，通常借助汇编命令（directives）来声明全局变量。下面的代码显示了前面的C程序的汇编代码。
+
+```assembly
+.data
+x:
+	.skip 4
+
+.text
+main:
+	la a0, x # 加载X的地址
+	lw a0, 0(a0) # 加载x的值
+	addi a0, a0, 1 # 增加a0的值
+	ret # Return
+```
+
+在前面的代码中，`.data`指令（第1行）通知汇编器必须将后续的内容放到静态数据区中。标签`x`标记了变量`x`的地址。`.skip`指令（第3行）指示汇编程序跳过4个字节，这用于为变量`x`分配空间。`.text`命令（第5行）通知汇编器，后续的内容放置到代码空间中。剩余的代码（第6-10行）实现了主例程。
+
+在高级语言中，比如C语言，局部变量是在例程中声明的变量，并且只能在声明它的例程中使用。
+
+理想情况下，局部变量应该分配到寄存器上。下面的代码包含了一个名为`tmp`的局部变量，它可以分配到寄存器上。
+
+```C
+void exchange(int* a, int* b)
+{
+	int tmp = *b;
+	*b = *a
+	*a = tmp;
+}
+```
+下面的代码显示了前面C语言代码的汇编代码。注意局部变量`tmp`是在寄存器`a2`上分配的。
+
+```assembly
+exchange:
+	lw a2, (a1) # tmp = *b
+	lw a3, (a0) # a3 = *a
+	sw a3, (a1) # *b = a3
+	sw a2, (a0) # *a = tmp
+	ret
+```
+
+
+
+## 8.6.1 将本地变量分配到内存上
 
 # 8.7 寄存器的使用策略
 
