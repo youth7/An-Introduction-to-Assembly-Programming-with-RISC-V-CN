@@ -424,6 +424,43 @@ int bar()
 * 接下来，调用`init_array`例程（第4行），在`init_array`返回之后，`my_array[4]`的值被加载到`a0`中以供返回（第5行）。
 * 最后，在从`bar`返回之前，增加栈指针以释放`my_array`（第6行）。
 
+
+下面的代码显示了另一个需要在内存中为局部变量分配空间的示例。在这种情况下，因为变量`d`是一个结构体，需要在内存中为其分配空间。然后，这个变量的地址被传递给例程`init_date`。
+
+```C
+typedef struct
+{
+	int year;
+	int month;
+	int day;
+} date_t;
+
+int get_current_day()
+{
+	date_t d;
+	init_date(&d);
+	return d.day;
+}
+```
+
+下面的代码显示了`get_current_day`例程的汇编代码。
+
+* 首先，减少栈指针，为变量`d`分配空间（第2行）。
+* 然后，`d`的地址被加载到寄存器`a0`中，并作为参数传递给例程`init_date`（第3行）。由于压栈的最后一个元素是`d`，所以栈指针指向`d`。
+* 接下来，调用`init_date`例程（第4行），返回后，将`d.day`的值加载到寄存器`a0`中以便返回（第5行）。
+* 最后，在从`get_current_day`返回前，增加栈指针以从栈中释放`d`（第6行）。
+
+
+```assembly
+get_current_day:
+	addi sp, sp, -12 # 给变量d分配栈空间
+	mv a0, sp # 将d的地址存到a0中
+	jal init_date # 调用init_date routine
+	lw a0, 8(sp) # 将 d.day 加载到a0
+	addi sp, sp, 12 # 回收栈空间
+	ret
+```
+
 # 8.7 寄存器的使用策略
 
 # 8.8 栈帧（Stack Frames）和帧指针
@@ -431,6 +468,4 @@ int bar()
 # 8.9 实现兼容RISC-V ilp32指令集的例程
 
 # 8.10 示例
-
-
 
