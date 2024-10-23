@@ -492,8 +492,8 @@ exchange:
 ```assembly
 mix:
 	lw a2, (a0) # 将重要的信息加载到a2
-	la a0, x # 设置第1个参数var.x
-	la a1, y # 设置第2个参数var.y
+	la a0, x # 使用var.x设置第1个参数
+	la a1, y # 使用var.y设置第2个参数
 	jal exchange # 调用exchange来交换着两个参数的值
 	mv a0, a2 # 将a2中的值复制到a0以便返回
 	ret
@@ -508,8 +508,8 @@ mix:
 	lw a2, (a0) # 将重要的信息加载到a2
 	addi sp, sp, -4 # 分配栈空间用来保存a2
 	sw a2, (sp) # 将a2保存到栈上
-	la a0, x # 设置第1个参数var.x
-	la a1, y # 设置第2个参数var.y
+	la a0, x # 使用var.x设置第1个参数
+	la a1, y # 使用var.y设置第2个参数
 	jal exchange # 调用exchange来交换着两个参数的值
 	lw a2, (sp) # 从栈中加载a2原来的值来恢复a2
 	addi sp, sp, 4 # 回收栈空间
@@ -551,7 +551,28 @@ RISC-V ilp32 ABI定义寄存器`t0`-`t6`、`a0`-`a7`和`ra`是caller-saved的。
 
 同样，callee不需要保存和恢复所有callee-saved寄存器，只需要保存那些被callee修改的寄存器。例如，`exchange`不需要保存寄存器`s0`-`s11`，因为它不修改这些寄存器。
 
+
 ## 8.7.2 返回地址的保存与恢复
+如前所述，每当调用一个例程，返回地址存储在`ra`（return address）寄存器中。换句话说，每当调用一个例程时，都会用一个新值更新`ra`，即`ra`之前保存的值会被破坏。因此，如果在调用点后还需要寄存器`ra`的内容，则必须保存和恢复。通常情况是，因为调用例程的代码通常属于另一个例程，因此，它可能需要返回地址，以便将其执行流程返回给它的调用者。请注意，`ret`伪指令读取寄存器`ra`的内容，将执行流返回到正确的位置。
+
+由于寄存器`ra`是caller-saved的，调用者必须保存其内容。在前面的例子中，`mix`例程必须保存并恢复`ra`的内容，以防止它在调用`exchange`例程时被破坏。下面的代码显示了`mix`例程的正确代码。
+```assembly
+mix:
+	addi sp, sp, -4 # 分配栈空间，准备在栈中保存ra
+	sw ra, (sp) # 将ra保存到栈
+	lw a2, (a0) # 将重要的信息加载到a2
+	addi sp, sp, -4 # 分配栈空间，准备在栈中保存a2
+	sw a2, (sp) # 将a2保存到栈
+	la a0, x # 使用var.x设置第1个参数
+	la a1, y # 使用var.y设置第2个参数
+	jal exchange # 调用exchange来交换着两个参数的值
+	lw a2, (sp) # 从栈中恢复a2
+	addi sp, sp, 4 # 回收栈空间
+	mv a0, a2 # 将a2的值复制到a0，以便返回
+	lw ra, (sp) # 从栈中恢复a2
+	addi sp, sp, 4 # 回收栈空间
+	ret
+```
 
 # 8.8 栈帧（Stack Frames）和帧指针
 
