@@ -275,10 +275,6 @@ main:
 	ret
 ```
 
-
-
-Reference parameters are parameters that contain a reference to a variable. This “reference” is the variable memory address. Hence, the routine may use this address to read or update the variable value. The following code shows a routine that expects its parameter to be passed by reference. This routine updates the variable value by increasing its contents by one.
-
 ***引用参数*（Reference parameters）这样一种参数，它包含了指向变量的引用**。这个“引用”是变量的内存地址。因此，例程可以使用该地址来读取或更新变量的值。下面的代码显示了一个例程，它期望其参数通过引用传递。这个例程通过将变量的内容加1来更新变量的值。
 
 ```c
@@ -587,6 +583,59 @@ mix:
 **栈帧（stack frame）是栈上存储的，有关活动例程信息的连续数据段**。在前面的例子中，当例程C执行时，有三个栈帧。第一个是例程A的栈帧，由地址0x0500和0x04F8（中的数据）组成
 
 ## 8.8.2 帧指针
+
+前几节讨论了使用程序栈存储活跃例程信息的几种情形。每当向程序栈添加新信息时，栈指针都会移动，在访问之前压入的信息时，必须考虑到这一点。例如，让我们分析一下`addijx`例程，它接受10个参数然后调用`get_x`例程，将其返回值与第9 (`i`)和第10 (`j`)个参数相加并返回结果。
+
+```c
+int addijx(int a, int b, int c, int d, int e,
+           int f, int g, int h, int i, int j)
+{
+	return get_x() + i + j;
+}
+```
+
+下面的代码展示了用汇编实现的`addijx`例程。请注意，返回地址保存在程序堆栈中（第2行和第3行），并从程序堆栈中（第9行和第10行）恢复。在（例程的）入口点，`sp`指向第9个参数(`i`)，但在返回地址保存在（压入）栈之后，`sp`指向返回地址。因此，要访问第9个参数，代码必须在栈指针上加上4（第5行）。
+
+```assembly
+addijx:
+	addi sp, sp, -4  
+	sw ra, (sp) # 保存返回地址
+	jal get_x # 调用get_x
+	lw a1, 4(sp) # 从栈中加载i
+	lw a2, 8(sp) # 从栈中加载j
+	add a0, a1, a1 # a0 = get_x() + i
+	add a0, a2, a2 # a0 = get_x() + i + j
+	lw ra, (sp) #  恢复返回地址
+	addi sp, sp, 4 # 回收返回值的栈空间
+	ret # 返回
+```
+
+往堆栈中添加的信息越多，就越难跟踪例程中所有参数和局部变量的地址。缓解这个问题的一种方法是保持一个指向栈的指针，这样所有的参数和局部变量都可以通过这个指针加上一个固定的偏移量来访问。**帧指针指向当前执行例程的栈帧起始处**。因此在例程的执行过程中，它提供了一个指向栈的指针，可以用作访问参数和局部变量。
+
+在RISC-V ilp32 ABI中，帧指针存储在`fp`（frame pointer）寄存器中。在例程开始时必须初始化`fp`，但必须保存其先前的值，以便例程返回之前可以恢复它的值。此外在大多数情况下，不需要一个一个地将信息推送到程序栈上，而是可以在例程开始时用一条指令分配栈帧，并在返回之前用一条指令释放栈帧。下列代码展示了一个示例，在该例程的开始处（第2行）分配了栈帧，在例程结束（第15行）处回收栈帧，并使用帧指针以固定的偏移量访问参数（第8行和第9行）
+
+```assembly
+addijx:
+	addi sp, sp, -8 # 为当前例程分配栈帧（addijx使用的，后续用来保存ra和fp）
+	sw ra, 4(sp) # 保存ra
+	sw fp, 0(sp) # 保存之前的fp
+	addi fp, sp, 8 # 调整fp，当前栈帧的栈底
+
+	jal get_x # 调用get_x
+	lw a1, (fp) # 从栈中加载i（基于fp来访问栈），i位于当前栈帧的前面
+	lw a2, 4(fp) # 从栈中加载j（基于fp来访问栈），j位于当前栈帧的前面
+	add a0, a1, a1 # a0 = get_x() + i
+	add a0, a2, a2 # a0 = get_x() + i + j
+
+	lw fp, 0(sp) # 恢复fp
+	lw ra, 4(sp) # 恢复ra
+	addi sp, sp, 8 # 回收栈帧
+	ret # Returns
+```
+
+
+
+在前面的例子中，`addijx`的栈帧有8个字节，存储了返回地址和前一个（例程的）帧指针。如果需要保存更多寄存器或需要在程序栈上存储局部变量，可以通过更改第2行和第15行中的常量（即8）来增加栈帧的空间。
 
 ## 8.8.3 保持栈指针对齐 
 
