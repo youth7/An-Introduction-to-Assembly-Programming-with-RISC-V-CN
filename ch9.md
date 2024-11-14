@@ -81,5 +81,38 @@ I/O地址空间定义了有效的I/O端口的集合。例如在IA-32中，I/O地
 
 # 9.3 RISC-V上的IO操作
 
+RISC-V ISA（包括RV32I ISA）的输入输出操作采用了内存映射I/O这种方式。因此，输入操作是通过执行load系指令（例如，`lw`）来执行的，而输出操作是通过store系指令（例如`sw`）来执行的。这些指令所执行的地址，都被映射到外设的寄存器或者内部存储中。  
+
+为了说明RISC-V上的I/O操作，让我们考虑一个电梯计算系统，它包含一个RV32I CPU、主存、一个七段数码管和一个楼层传感器，如图9.5所示。
+
+![](./imgs//ch9/9.5.png)
+> 图9.5
+
+如前几节所述，七段数码管由显示控制器控制。但在本例中，显示控制器的`Control Reg`被映射到地址0x00000040。楼层传感器检测电梯所在楼层，而楼层传感控制器将该信息记录在`Data Reg`上，这是位于楼层传感控制器中的一个8位寄存器，它被映射到地址0x00000080。如果电梯位于第四层，楼层传感控制器将值4（0b00000100）存储在`Data Reg`中。
+
+下面的代码显示了一个例程，它从楼层传感控制器读取电梯的楼层的值（第6~7行），然后转换为configuration byte（第8~10行），并将configuration byte写入显示控制器的`Control Reg`中以设置7段数码管的显示（第11~12行）
+
+```assembly
+.section .text
+.set DISPLAY_CONTROL_REG_PORT, 0x00000040
+.set FLOOR_DATA_REG_PORT, 0x00000080
+ 
+update_display:
+    li  a0, FLOOR_DATA_REG_PORT    # 读取的FLOOR_DATA_REG_PORT
+    lb  a1, (a0)                   # 将FLOOR_DATA_REG_PORT所指向的地址中的值加载到a1中，此时等于读取了楼层的值
+    la  a0, floor_to_pattern_table # 将floor_to_pattern_table所代表的地址加载到a0，floor_to_pattern_table指向的是一个表
+    add t0, a0, a1                 # a1 + a0 ，即根据楼层的偏移量，在floor_to_pattern_table中找出所需的configuration byte的地址
+    lb  a1, (t0)                   # 加载configuration byte
+    li  a0, DISPLAY_CONTROL_REG_PORT 
+    sb  a1, (a0)                   # 将configuration byte的值写入DISPLAY_CONTROL_REG_PORT的地址中，设置七段数码管显示
+    ret # Returns
+
+.section .rodata
+floor_to_pattern_table:
+    .byte 0x7e,0x30,0x6d,0x79,0x33,0x5b,0x5f,0x70,0x7f,0x7b
+```
+
+在9.1节讨论过，configuration byte的每个bit控制（七段数码管中）每个segment（或光点）的打开或关闭。因此代码必须将楼层号转换为一个configuration byte，该configuration byte打开某些segment，使显示的图案与楼层号一致。例如，如果电梯位于四层（楼层号为4），代码必须写入0x33 （0b00110011）来打开b、c、f和g段，如图9.5所示。请注意，该代码使用了一个表（`floor_to_pattern_table`），可以通过楼层号索引该表，以获取正确的configuration byte。
+
 # 9.4 忙等（Busy waiting）
 
