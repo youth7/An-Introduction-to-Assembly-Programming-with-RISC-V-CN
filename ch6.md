@@ -107,7 +107,7 @@ RV32I的非特权ISA包含33个32位寄存器，也称为非特权寄存器。
 | x9      | s1（**s**aved register 1 ）                           | 保存寄存器1         |            | ✔️            |
 | x10-x17 | a0-a7（**f**unction arguments 0 to 7）                | 函数参数0-7         | ✔️          |              |
 | x18-x27 | s2-s11（**s**aved register **2-11** ）                | 保存寄存器2-11      |            | ✔️            |
-| x28-x31 | t3-t7（**t**emporary register **3-7**）               | 临时寄存器3-7       | ✔️          |              |
+| x28-x31 | t3-t6（**t**emporary register **3-6**）               | 临时寄存器3-6       | ✔️          |              |
 | pc      | pc（**p**rogram **c**ounter）                         | 程序计数器          |            |              |
 
 > 表6.4 RV32I非特权寄存器
